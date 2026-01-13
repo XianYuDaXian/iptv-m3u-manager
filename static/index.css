@@ -1,4 +1,3 @@
-/* Existing root and body */
 :root {
     --primary: #6366f1;
     --bg-dark: #0f172a;
@@ -35,14 +34,13 @@ body {
     transform: translateY(-4px);
 }
 
-/* Add Output Item Card same as glass-card for now, or distinct */
 .output-item-card {
     background: var(--glass-bg);
     backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
     border-radius: 16px;
+
     padding: 20px;
-    /* Slightly tighter padding */
     margin-bottom: 20px;
     transition: transform 0.3s ease;
     position: relative;
@@ -73,7 +71,6 @@ body {
     font-size: 0.9em;
     word-break: break-all;
     color: #86efac;
-    /* Light green for URL */
     border: 1px dashed var(--glass-border);
     cursor: pointer;
     position: relative;
@@ -127,6 +124,18 @@ h2 {
 .btn-sm {
     padding: 4px 10px;
     font-size: 0.85em;
+}
+
+.toolbar-btn {
+    height: 36px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 90px;
+    box-sizing: border-box;
+    white-space: nowrap;
 }
 
 .sub-item:hover {
@@ -209,7 +218,7 @@ textarea {
     z-index: 3000;
 }
 
-/* New Output Filtering Styles */
+
 .tag-container {
     display: flex;
     flex-wrap: wrap;
@@ -257,7 +266,6 @@ textarea {
 
 .sub-selector-list {
     max-height: 380px;
-    /* Approx 12-15 items, if more, it scrolls. 20 items might be too tall for some screens, setting reasonable height. */
     overflow-y: auto;
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid var(--glass-border);
@@ -267,7 +275,7 @@ textarea {
     display: flex !important;
     flex-direction: column !important;
     align-items: flex-start !important;
-    /* Force left align */
+    /* 左对齐 */
     text-align: left !important;
 }
 
@@ -281,7 +289,7 @@ textarea {
     box-sizing: border-box !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     color: #fff !important;
-    /* Force white text */
+
 }
 
 .sub-checkbox-item:last-child {
@@ -301,7 +309,7 @@ textarea {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    /* Use standard ellipsis instead of complex mask */
+
     text-align: left !important;
     font-size: 0.9em;
 }
@@ -310,14 +318,13 @@ textarea {
     background: rgba(255, 255, 255, 0.05);
 }
 
-/* Real-time Preview Window - Floating */
+
 .preview-float {
     position: absolute;
     z-index: 1000;
     width: 100%;
     left: 0;
     top: 100%;
-    /* Shows below the input */
     background: rgba(15, 23, 42, 0.98);
     backdrop-filter: blur(20px);
     border: 1px solid var(--primary);

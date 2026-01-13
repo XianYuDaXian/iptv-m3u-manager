@@ -8,12 +8,17 @@ import re
 from models import OutputSource, Subscription, Channel
 from database import get_session
 from services.generator import M3UGenerator
+from services.epg import fetch_epg_cached
 from routers.subscriptions import process_subscription_refresh
 
 router = APIRouter(tags=["outputs"])
 
 @router.post("/outputs/", response_model=OutputSource)
-def create_output(out: OutputSource, session: Session = Depends(get_session)):
+async def create_output(out: OutputSource, session: Session = Depends(get_session)):
+    """新建聚合源"""
+    if out.epg_url:
+        await fetch_epg_cached(out.epg_url, refresh=True)
+        
     session.add(out)
     session.commit()
     session.refresh(out)
@@ -21,28 +26,31 @@ def create_output(out: OutputSource, session: Session = Depends(get_session)):
 
 @router.get("/outputs/", response_model=List[OutputSource])
 def list_outputs(session: Session = Depends(get_session)):
+    """聚合源列表"""
     return session.exec(select(OutputSource)).all()
 
 @router.delete("/outputs/{output_id}")
 def delete_output(output_id: int, session: Session = Depends(get_session)):
+    """删除聚合源"""
     out = session.get(OutputSource, output_id)
     if not out:
-        raise HTTPException(status_code=404, detail="Output not found")
+        raise HTTPException(status_code=404, detail="输出源不存在")
     session.delete(out)
     session.commit()
-    return {"message": "Deleted successfully"}
+    return {"message": "删除成功"}
 
 @router.put("/outputs/{output_id}", response_model=OutputSource)
 def update_output(output_id: int, output_data: OutputSource, session: Session = Depends(get_session)):
+    """更新聚合配置"""
     output = session.get(OutputSource, output_id)
     if not output:
-        raise HTTPException(status_code=404, detail="Output not found")
+        raise HTTPException(status_code=404, detail="输出源不存在")
     
-    # Check slug uniqueness only if it's being changed
+    # Slug 变了得检查重名
     if output_data.slug != output.slug:
         existing = session.exec(select(OutputSource).where(OutputSource.slug == output_data.slug)).first()
         if existing:
-            raise HTTPException(status_code=400, detail="Slug already exists")
+            raise HTTPException(status_code=400, detail="Slug 已被占用")
 
     output.name = output_data.name
     output.slug = output_data.slug
@@ -59,12 +67,12 @@ def update_output(output_id: int, output_data: OutputSource, session: Session = 
 
 @router.post("/outputs/preview")
 def preview_output(data: dict, session: Session = Depends(get_session)):
-    # data keys: subscription_ids, keywords (list of {value, group}), filter_regex
+    """预览结果"""
     sub_ids = data.get("subscription_ids", [])
     raw_keywords = data.get("keywords", [])
     regex = data.get("filter_regex", ".*")
     
-    # Normalize keywords to list of dicts
+    # 整理关键字列表
     keywords = []
     for k in raw_keywords:
         if isinstance(k, str):
@@ -72,7 +80,7 @@ def preview_output(data: dict, session: Session = Depends(get_session)):
         elif isinstance(k, dict):
             keywords.append(k)
 
-    # Only fetch channels from enabled subscriptions
+    # 只要启用了的预览
     enabled_subs = session.exec(select(Subscription.id).where(Subscription.is_enabled == True)).all()
     active_sub_ids = [sid for sid in sub_ids if sid in enabled_subs] if sub_ids else enabled_subs
 
@@ -81,11 +89,11 @@ def preview_output(data: dict, session: Session = Depends(get_session)):
     else:
         channels = []
         
-    # Fetch Sub Map
+    # 获取订阅名，方便看来源
     subs = session.exec(select(Subscription)).all()
     sub_map = {s.id: s.name or s.url for s in subs}
 
-    # Apply global regex filter first if any
+    # 应用正则过滤
     if regex and regex != ".*":
         try:
             pattern = re.compile(regex, re.IGNORECASE)
@@ -95,29 +103,24 @@ def preview_output(data: dict, session: Session = Depends(get_session)):
 
     results = {}
     if not keywords:
-        # Propagate before dump
+        # 没搜到关键字就全给它
         channels = M3UGenerator.propagate_logos(channels)
-        
-        # If no keywords, just group by "All"
         results["All"] = [
             {**c.model_dump(), "source": sub_map.get(c.subscription_id, "Unknown")} 
             for c in channels 
         ]
     else:
-        # Apply propagation to the source list 'channels' first!
+        # 逐个关键字匹配看看
         channels = M3UGenerator.propagate_logos(channels)
-        
-        # Strategy: We reuse the generator logic per keyword to emulate the result
         for k_obj in keywords:
             k_val = k_obj.get("value", "")
             k_group = k_obj.get("group", "")
             if not k_val: continue
             
-            # Filter specifically for this keyword to show what IT matches
+            # 关键字筛选逻辑
             matches = M3UGenerator.filter_channels(channels, None, [k_obj])
             
             display_key = f"{k_val} → {k_group}" if k_group else k_val
-            
             results[display_key] = [
                 {**c.model_dump(), "source": sub_map.get(c.subscription_id, "Unknown")} 
                 for c in matches 
@@ -127,9 +130,10 @@ def preview_output(data: dict, session: Session = Depends(get_session)):
 
 @router.post("/outputs/{output_id}/refresh")
 async def refresh_output(output_id: int, session: Session = Depends(get_session)):
+    """手动刷新关联订阅和 EPG"""
     out = session.get(OutputSource, output_id)
     if not out:
-        raise HTTPException(status_code=404, detail="Output not found")
+        raise HTTPException(status_code=404, detail="输出源不存在")
     
     try:
         sub_ids = json.loads(out.subscription_ids)
@@ -137,6 +141,7 @@ async def refresh_output(output_id: int, session: Session = Depends(get_session)
         sub_ids = []
         
     results = []
+    # 逐个刷新订阅
     for sub_id in sub_ids:
         try:
             sub = session.get(Subscription, sub_id)
@@ -149,20 +154,29 @@ async def refresh_output(output_id: int, session: Session = Depends(get_session)
                 sub.last_update_status = f"Error: {str(e)}"
                 session.add(sub)
             results.append(f"Sub {sub_id}: Failed")
-    
+
+    # 刷新聚合 EPG
+    if out.epg_url:
+        try:
+            await fetch_epg_cached(out.epg_url, refresh=True)
+            results.append("Aggregate EPG: Success")
+        except:
+            results.append("Aggregate EPG: Failed")
+            
     out.last_updated = datetime.utcnow()
     out.last_update_status = "Checked linked subs"
     session.add(out)
     session.commit()
-    return {"message": "Refresh complete", "details": results}
+    return {"message": "刷新完成", "details": results}
 
 @router.get("/m3u/{slug}")
 async def get_m3u_output(slug: str, session: Session = Depends(get_session)):
+    """下载 M3U"""
     out = session.exec(select(OutputSource).where(OutputSource.slug == slug)).first()
     if not out:
-        raise HTTPException(status_code=404, detail="Output source not found")
+        raise HTTPException(status_code=404, detail="输出源不存在")
     
-    # Track Request Time
+
     out.last_request_time = datetime.utcnow()
     session.add(out)
     session.commit()
@@ -172,7 +186,7 @@ async def get_m3u_output(slug: str, session: Session = Depends(get_session)):
     except:
         sub_ids = []
 
-    # Auto-refresh logic (Simple sequential)
+    # 顺便刷一下关联订阅
     for sub_id in sub_ids:
          try:
             sub = session.get(Subscription, sub_id)
@@ -181,16 +195,19 @@ async def get_m3u_output(slug: str, session: Session = Depends(get_session)):
                sub.last_update_status = "Success (Client Trigger)"
                session.add(sub)
                session.commit()
-         except Exception as e:
-             # print(f"Auto-refresh failed for sub {sub_id}: {e}")
+         except:
              pass
     
-    # Re-fetch channels after update
+    # 取出刷新的最新频道
     enabled_subs = session.exec(select(Subscription.id).where(Subscription.is_enabled == True)).all()
     active_sub_ids = [sid for sid in sub_ids if sid in enabled_subs] if sub_ids else enabled_subs
 
     if active_sub_ids:
-        channels = session.exec(select(Channel).where(Channel.subscription_id.in_(active_sub_ids))).all()
+        # 只要启用了的
+        channels = session.exec(select(Channel).where(
+            Channel.subscription_id.in_(active_sub_ids),
+            Channel.is_enabled == True
+        )).all()
     else:
         channels = []
 
@@ -208,6 +225,7 @@ async def get_m3u_output(slug: str, session: Session = Depends(get_session)):
     except:
         keywords = []
         
+    # 过滤、生成 M3U 
     filtered = M3UGenerator.filter_channels(channels, out.filter_regex, keywords)
     m3u_content = M3UGenerator.generate_m3u(filtered, sub_map, out.epg_url, out.include_source_suffix)
     return Response(content=m3u_content, media_type="application/x-mpegurl; charset=utf-8")

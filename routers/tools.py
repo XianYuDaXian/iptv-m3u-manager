@@ -65,6 +65,7 @@ async def check_stream_visual(req: CheckRequest, session: Session = Depends(get_
                 ch.check_date = datetime.utcnow()
                 ch.check_image = res.get('image') # Base64 格式字符串或 None
                 ch.check_error = res.get('error') if not res['status'] else None # 记录失败原因
+                ch.check_source = 'manual' # 凡是通过此 API 调用的都是手动 (或前端手动触发)
                 
                 # 自动处理开关启用时：成功则自动开启，失败则自动禁用
                 if req.auto_disable:

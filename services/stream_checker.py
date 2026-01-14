@@ -5,6 +5,9 @@ import subprocess
 import shutil
 import uuid
 import tempfile
+import json
+from datetime import datetime, timedelta
+from sqlmodel import Session, select
 from static_ffmpeg import run
 
 class StreamChecker:
@@ -109,3 +112,47 @@ class StreamChecker:
                     os.remove(temp_filename)
                 except:
                     pass
+
+    @classmethod
+    async def run_batch_check(cls, session: Session, channels, concurrency: int = 5, source: str = 'manual'):
+        """
+        分批执行多个频道的深度检测，并更新数据库
+        :param session: 数据库会话
+        :param channels: Channel 模型对象列表
+        :param concurrency: 并发数
+        :param source: 检测来源 (manual/auto/other)
+        """
+        if not channels:
+            return
+
+        sem = asyncio.Semaphore(concurrency)
+
+        async def _bounded_check(ch):
+            async with sem:
+                res = await cls.check_stream_visual(ch.url)
+                return {**res, "ch_id": ch.id}
+
+        tasks = [_bounded_check(ch) for ch in channels]
+        results = await asyncio.gather(*tasks)
+
+        # 更新数据库
+        for res in results:
+            if res.get('ch_id'):
+                ch = session.get(cls._get_channel_model(), res['ch_id'])
+                if ch:
+                    ch.check_status = res['status']
+                    ch.check_date = datetime.utcnow()
+                    ch.check_image = res.get('image')
+                    ch.check_error = res.get('error') if not res['status'] else None
+                    ch.check_source = source
+                    # 根据深度检测结果自动处理
+                    ch.is_enabled = res['status']
+                    session.add(ch)
+        
+        session.commit()
+
+    @staticmethod
+    def _get_channel_model():
+        # 避免循环导入
+        from models import Channel
+        return Channel

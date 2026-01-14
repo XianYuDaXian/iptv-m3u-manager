@@ -33,6 +33,7 @@ class Channel(SQLModel, table=True):
     check_date: Optional[datetime] = Field(default=None) # 最后检测时间
     check_image: Optional[str] = Field(default=None) # 频道截图 (Base64)
     check_error: Optional[str] = Field(default=None) # 深度检测失败原因 (如无画面)
+    check_source: Optional[str] = Field(default=None) # 检测来源: manual / auto
     
     subscription: Subscription = Relationship(back_populates="channels")
 

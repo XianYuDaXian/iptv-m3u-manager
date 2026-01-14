@@ -1,14 +1,15 @@
-from fastapi import APIRouter, HTTPException, Depends, Response
+from fastapi import APIRouter, HTTPException, Depends, Response, BackgroundTasks
 from sqlmodel import Session, select
 from typing import List, Dict, Any
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 
 from models import OutputSource, Subscription, Channel
 from database import get_session
 from services.generator import M3UGenerator
 from services.epg import fetch_epg_cached
+from services.stream_checker import StreamChecker
 from routers.subscriptions import process_subscription_refresh
 
 router = APIRouter(tags=["outputs"])
@@ -166,7 +167,7 @@ def preview_output(data: dict, session: Session = Depends(get_session)):
     return results
 
 @router.post("/outputs/{output_id}/refresh")
-async def refresh_output(output_id: int, session: Session = Depends(get_session)):
+async def refresh_output(output_id: int, background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
     """手动刷新关联订阅和 EPG"""
     out = session.get(OutputSource, output_id)
     if not out:
@@ -204,7 +205,69 @@ async def refresh_output(output_id: int, session: Session = Depends(get_session)
     out.last_update_status = "手动更新成功"
     session.add(out)
     session.commit()
-    return {"message": "刷新完成", "details": results}
+
+    # 如果开启了自动深度检测，手动刷新时也异步触发
+    trigger_visual = False
+    if out.auto_visual_check:
+        print(f"DEBUG: [手动刷新] 聚合源 {output_id} 开启了深度检测，加入后台任务 (强制探测模式)...")
+        background_tasks.add_task(run_output_visual_check, output_id, force_check=True)
+        trigger_visual = True
+    else:
+        print(f"DEBUG: [手动刷新] 聚合源 {output_id} 未开启深度检测 (auto_visual_check={out.auto_visual_check})")
+
+    return {"message": "刷新完成", "details": results, "trigger_visual": trigger_visual}
+
+async def run_output_visual_check(output_id: int, force_check: bool = False):
+    """后台运行深度检测"""
+    from database import engine
+    from sqlmodel import Session
+    
+    with Session(engine) as session:
+        out = session.get(OutputSource, output_id)
+        if not out: return
+        
+        try:
+            sub_ids = json.loads(out.subscription_ids)
+            raw_channels = []
+            for sid in sub_ids:
+                chs = session.exec(select(Channel).where(Channel.subscription_id == sid)).all()
+                raw_channels.extend(chs)
+            
+            try:
+                keywords = json.loads(out.keywords)
+            except:
+                keywords = []
+            
+            from services.generator import M3UGenerator
+            matched_channels = M3UGenerator.filter_channels(raw_channels, out.filter_regex, keywords)
+            
+            # 手动刷新时默认强制执行（force_check=True）
+            if force_check:
+                pending_channels = matched_channels
+                print(f"DEBUG: [后台检测] 强制模式启动，将重新探测全部 {len(pending_channels)} 个匹配频道")
+            else:
+                # 自动同步场景下复用 24 小时冷却逻辑
+                check_limit = datetime.utcnow() - timedelta(hours=24)
+                pending_channels = [
+                    c for c in matched_channels 
+                    if not c.check_date or c.check_date < check_limit
+                ]
+                print(f"DEBUG: [后台检测] 自动模式，匹配 {len(matched_channels)} 个频道，其中 {len(pending_channels)} 个需要重新探测")
+            
+            if pending_channels:
+                print(f"[后台检测] 聚合源 {out.id} 触发同步深度检测，待测: {len(pending_channels)}")
+                from services.stream_checker import StreamChecker
+                check_source = 'manual' if force_check else 'auto'
+                await StreamChecker.run_batch_check(session, pending_channels, source=check_source)
+                
+                # 重新获取对象以防 session 冲突
+                out = session.get(OutputSource, output_id)
+                out.last_update_status = "手动更新+深度检测完成"
+                session.add(out)
+                session.commit()
+                print(f"[后台检测] 聚合源 {out.id} 检测完成。")
+        except Exception as e:
+            print(f"[后台检测] 聚合源 {out.id} 执行失败: {e}")
 
 @router.get("/m3u/{slug}")
 async def get_m3u_output(slug: str, session: Session = Depends(get_session)):

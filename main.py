@@ -123,6 +123,13 @@ def migrate_db():
             session.commit()
 
         try:
+            session.exec(text("SELECT check_source FROM channel LIMIT 1"))
+        except:
+             print("正在迁移 Channel 表: 添加 check_source 字段")
+             session.exec(text("ALTER TABLE channel ADD COLUMN check_source VARCHAR"))
+             session.commit()
+
+        try:
             session.exec(text("SELECT is_enabled FROM outputsource LIMIT 1"))
         except:
             print("正在迁移 OutputSource 表: 添加 is_enabled 字段")
@@ -226,32 +233,7 @@ async def auto_update_task():
 
                                         if pending_channels:
                                             print(f"[自动同步] 聚合匹配 {len(matched_channels)} 个，其中 {len(pending_channels)} 个需要检测...")
-                                            
-                                            # 定义带限流的检测函数
-                                            # 复用 visual_check_semaphore 或自定义。因为是后台，给 5 个并发足够
-                                            sem = asyncio.Semaphore(5)
-                                            
-                                            async def bounded_check(ch):
-                                                async with sem:
-                                                    res = await StreamChecker.check_stream_visual(ch.url)
-                                                    return {**res, "ch_id": ch.id}
-
-                                            tasks = [bounded_check(ch) for ch in pending_channels]
-                                            results = await asyncio.gather(*tasks)
-                                            
-                                            # 更新数据库
-                                            for res in results:
-                                                if res.get('ch_id'):
-                                                    ch = session.get(Channel, res['ch_id'])
-                                                    if ch:
-                                                        ch.check_status = res['status']
-                                                        ch.check_date = datetime.utcnow()
-                                                        ch.check_image = res.get('image')
-                                                        ch.check_error = res.get('error') if not res['status'] else None
-                                                        # 根据深度检测结果自动处理
-                                                        ch.is_enabled = res['status']
-                                                        session.add(ch)
-                                            session.commit()
+                                            await StreamChecker.run_batch_check(session, pending_channels, source='auto')
                                             print(f"[自动同步] 聚合源 {out.id} 自动化深度检测任务完成。")
                                     except Exception as vis_e:
                                         print(f"[自动同步] 聚合源 {out.id} 自动化深度检测执行失败: {vis_e}")

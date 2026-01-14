@@ -329,7 +329,6 @@
         </div>
     </div>
 
-    <div id="status"></div>
     <div id="toast-container"></div>
 
     <script>
@@ -600,9 +599,9 @@
                         // 增加具体格点的时分显示，方便核对
                         const hhmm = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 
-                        // 逻辑：如果已经有 date 但本轮前端没出图(c.visualImage)，标注为“自动检测”
-                        const isAuto = date && !c.visualImage;
-                        const autoTag = isAuto ? `<span style="background: rgba(251,191,36,0.15); color: #fbbf24; padding: 1px 4px; border-radius: 3px; font-size: 0.7em; border: 1px solid rgba(251,191,36,0.2); margin-left: 4px;">自动检测</span>` : '';
+                        // 逻辑：直接读取 check_source
+                        const isAuto = c.check_source === 'auto';
+                        const autoTag = isAuto ? `<span style="background: rgba(251,191,36,0.15); color: #fbbf24; padding: 1px 4px; border-radius: 3px; font-size: 0.7em; border: 1px solid rgba(251,191,36,0.2); margin-left: 4px;">自动</span>` : '';
 
                         dateHtml = `<div style="font-size: 0.75em; opacity: 0.5; margin-top: 2px;">上次检测: ${timeStr} <small>(${hhmm})</small> ${autoTag}</div>`;
                     }
@@ -996,9 +995,9 @@
             renderBaseTable(document.getElementById('channel_list'), window.lastRenderShowActions);
 
             if (!wasCancelled) {
-                showStatus(`深度检测完成，共处理 ${finishedInThisSession} 个频道。`);
+                showToast(`深度检测圆满完成！共处理 ${finishedInThisSession} 个频道。`, 'success');
             } else {
-                showStatus(`检测已中断，已保存 ${finishedInThisSession} 个结果。`);
+                showToast(`检测已提前中断，已保存 ${finishedInThisSession} 个结果。`, 'warning');
             }
         }
 
@@ -1308,6 +1307,11 @@
             }, 3000);
         }
 
+        // 兼容旧版或简写提示
+        function showStatus(msg) {
+            showToast(msg, 'info');
+        }
+
         // --- 结束 ---
 
         async function updateRealtimePreview() {
@@ -1381,7 +1385,7 @@
             try {
                 const res = await fetch(`/subscriptions/${id}`, { method: 'DELETE' });
                 if (res.ok) {
-                    showStatus('删除成功');
+                    showToast('订阅删除成功', 'success');
                     fetchSubs();
                 } else {
                     const error = await res.text();
@@ -1664,20 +1668,37 @@
         }
 
         async function refreshOutput(id) {
-            showStatus('正在刷新所有关联订阅...');
+            showToast('正在刷新聚合关联的所有订阅...', 'info');
             try {
                 const res = await fetch(`/outputs/${id}/refresh`, { method: 'POST' });
                 if (res.ok) {
                     const data = await res.json();
-                    showStatus('刷新完成');
-                    console.log(data);
+                    showToast('基础同步已完成', 'success');
                     fetchOutputs();
-                    fetchSubs(); // 顺带刷下状态
+                    fetchSubs();
+
+                    if (data.trigger_visual) {
+                        showToast('已进入后台深度检测队列，请稍候...', 'info');
+                        // 启动一个小型轮询，每 3 秒检查一次，最多 10 次
+                        let count = 0;
+                        const poller = setInterval(async () => {
+                            count++;
+                            const r = await fetch('/outputs/');
+                            const outputs = await r.json();
+                            const target = outputs.find(o => o.id === id);
+                            if (target && target.last_update_status && target.last_update_status.includes('+深度检测完成')) {
+                                showToast(`${target.name} 深度检测已圆满完成！`, 'success');
+                                fetchOutputs();
+                                clearInterval(poller);
+                            }
+                            if (count >= 20) clearInterval(poller); // 最多等一分钟
+                        }, 3000);
+                    }
                 } else {
-                    alert('刷新失败');
+                    showToast('刷新请求失败', 'error');
                 }
             } catch (err) {
-                alert('网络错误: ' + err.message);
+                showToast('网络错误: ' + err.message, 'error');
             }
         }
 

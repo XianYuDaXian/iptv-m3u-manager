@@ -369,8 +369,9 @@
 
         function formatDate(isoStr) {
             if (!isoStr) return '从未更新';
-            // 后端用的是 UTC。浏览器需要转成本地时间（北京时间）
-            const dateStr = isoStr.endsWith('Z') ? isoStr : isoStr + 'Z';
+            // 确保兼容性：将 "2024-01-01 12:00:00" 转为 "2024-01-01T12:00:00Z"
+            let dateStr = isoStr.replace(' ', 'T');
+            if (!dateStr.endsWith('Z')) dateStr += 'Z';
             const d = new Date(dateStr);
             return d.toLocaleString('zh-CN', { hour12: false });
         }
@@ -587,9 +588,11 @@
 
                     let dateHtml = '';
                     if (date) {
-                        // 后端返回的是 UTC iso 字符串，前端 new Date(date) 会由于缺 Z 而按本地时间解析
-                        // 强制加 Z 确保按 UTC 解析，消除 8 小时偏移
-                        const dateObj = new Date(date.endsWith('Z') ? date : date + 'Z');
+                        // 确保兼容性：将 "2024-01-01 12:00:00" 转为 "2024-01-01T12:00:00Z"
+                        let dateStr = date.replace(' ', 'T');
+                        if (!dateStr.endsWith('Z')) dateStr += 'Z';
+                        const dateObj = new Date(dateStr);
+
                         const now = new Date();
                         const mins = Math.floor((now - dateObj) / 60000);
                         let timeStr = mins < 60 ? `${mins}分前` : (mins < 1440 ? `${Math.floor(mins / 60)}时前` : `${Math.floor(mins / 1440)}天前`);
@@ -1026,7 +1029,7 @@
             // 渲染订阅管理列表
             const list = document.getElementById('sub_list');
             list.innerHTML = data.map(s => {
-                const statusColor = s.last_update_status && s.last_update_status.startsWith('Error') ? '#ef4444' : '#10b981';
+                const statusColor = s.last_update_status && (s.last_update_status.includes('失败') || s.last_update_status.includes('Error')) ? '#ef4444' : '#10b981';
                 const opacity = s.is_enabled ? '1' : '0.5';
                 const toggleText = s.is_enabled ? '禁用' : '启用';
                 const toggleColor = s.is_enabled ? '#f59e0b' : '#10b981';
@@ -1691,7 +1694,7 @@
                 }
 
                 list.innerHTML = data.map(o => {
-                    const statusColor = o.last_update_status && o.last_update_status.startsWith('Error') ? '#ef4444' : '#10b981';
+                    const statusColor = o.last_update_status && (o.last_update_status.includes('失败') || o.last_update_status.includes('Error')) ? '#ef4444' : '#10b981';
                     const subIds = JSON.parse(o.subscription_ids || "[]");
                     let keywordsArr = [];
                     try { keywordsArr = JSON.parse(o.keywords || "[]"); } catch (e) { }

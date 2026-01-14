@@ -191,7 +191,7 @@ async def auto_update_task():
                                     await fetch_epg_cached(out.epg_url, refresh=True)
                                 
                                 out.last_updated = now
-                                out.last_update_status = f"AutoUpdate Success ({datetime.now().strftime('%H:%M:%S')})"
+                                out.last_update_status = "自动更新成功"
                                 session.add(out)
                                 session.commit()
                                 print(f"[自动更新] 聚合源 {out.id} 及其关联订阅同步完成。")
@@ -257,7 +257,7 @@ async def auto_update_task():
                                         print(f"[自动同步] 聚合源 {out.id} 自动化深度检测执行失败: {vis_e}")
                             except Exception as e:
                                 print(f"[自动更新] 聚合源 {out.id} 刷新失败: {e}")
-                                out.last_update_status = f"AutoUpdate Error: {str(e)}"
+                                out.last_update_status = f"自动更新失败: {str(e)}"
                                 session.add(out)
                                 session.commit()
         except Exception as outer_e:

@@ -201,7 +201,7 @@ async def refresh_output(output_id: int, session: Session = Depends(get_session)
             results.append("Aggregate EPG: Failed")
             
     out.last_updated = datetime.utcnow()
-    out.last_update_status = "Checked linked subs"
+    out.last_update_status = "手动更新成功"
     session.add(out)
     session.commit()
     return {"message": "刷新完成", "details": results}

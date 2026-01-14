@@ -155,33 +155,34 @@ async def auto_update_task():
     while True:
         try:
             with Session(engine) as session:
-                subs = session.exec(select(Subscription)).all()
+                # 1. 更新订阅
+                subs = session.exec(select(Subscription).where(
+                    Subscription.auto_update_minutes > 0,
+                    Subscription.is_enabled == True
+                )).all()
                 for sub in subs:
-                    if sub.auto_update_minutes > 0:
-                        now = datetime.utcnow()
-                        last = sub.last_updated or datetime.min
-                        elapsed_mins = (now - last).total_seconds() / 60
-                        
-                        if elapsed_mins >= sub.auto_update_minutes:
-                            print(f"[自动更新] 正在刷新订阅 {sub.id} ({sub.name})。已耗时: {elapsed_mins:.1f}分钟")
-                            try:
-                                from routers.subscriptions import process_subscription_refresh
-                                count = await process_subscription_refresh(session, sub)
-                                print(f"[自动更新] 订阅 {sub.id} 已同步。共提取到 {count} 个频道。")
-                            except Exception as e:
-                                print(f"[自动更新] 订阅 {sub.id} 刷新失败: {e}")
-                                sub.last_update_status = f"AutoUpdate Error: {str(e)}"
-                                session.add(sub)
-                                session.commit()
-                
-                # 聚合源自动同步
-                outputs = session.exec(select(OutputSource)).all()
+                    now = datetime.utcnow()
+                    last = sub.last_updated or datetime.min
+                    elapsed_mins = (now - last).total_seconds() / 60
+                    
+                    if elapsed_mins >= sub.auto_update_minutes:
+                        print(f"[自动更新] 正在刷新订阅 {sub.id} ({sub.name})。已耗时: {elapsed_mins:.1f}分钟")
+                        try:
+                            from routers.subscriptions import process_subscription_refresh
+                            count = await process_subscription_refresh(session, sub)
+                            print(f"[自动更新] 订阅 {sub.id} 已同步。共提取到 {count} 个频道。")
+                        except Exception as e:
+                            print(f"[自动更新] 订阅 {sub.id} 刷新失败: {e}")
+                            sub.last_update_status = f"AutoUpdate Error: {str(e)}"
+                            session.add(sub)
+                            session.commit()
+            
+                # 2. 更新聚合源
+                outputs = session.exec(select(OutputSource).where(
+                    OutputSource.auto_update_minutes > 0,
+                    OutputSource.is_enabled == True
+                )).all()
                 for out in outputs:
-                    if out.auto_update_minutes > 0:
-                        now = datetime.utcnow()
-                        last = out.last_updated or datetime.min
-                        elapsed_mins = (now - last).total_seconds() / 60
-                        
                         if elapsed_mins >= out.auto_update_minutes:
                             print(f"[自动更新] 正在刷新聚合源 {out.id} ({out.name})...")
                             try:

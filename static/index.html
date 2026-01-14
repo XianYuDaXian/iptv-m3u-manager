@@ -667,11 +667,14 @@
 
             // 更新“加载更多”按钮
             const btnContainer = document.getElementById('load_more_container');
-            if (renderOffset >= filteredChannels.length) {
-                btnContainer.style.display = 'none';
-            } else {
-                btnContainer.style.display = 'block';
-                btnContainer.querySelector('button').innerText = `查看更多 (剩余 ${filteredChannels.length - renderOffset} 条)`;
+            if (btnContainer) {
+                if (renderOffset >= filteredChannels.length) {
+                    btnContainer.style.display = 'none';
+                } else {
+                    btnContainer.style.display = 'block';
+                    const btn = btnContainer.querySelector('button');
+                    if (btn) btn.innerText = `查看更多 (剩余 ${filteredChannels.length - renderOffset} 条)`;
+                }
             }
         }
 
@@ -1013,10 +1016,20 @@
                 const item = currentChannels.find(c => c.id === id);
                 if (item) {
                     item.is_enabled = updated.is_enabled;
-                    // 强制刷表
-                    renderOffset = 0;
-                    renderBaseTable(document.getElementById('channel_list'), true);
-                    document.getElementById('channel_list_container').scrollTop = 0;
+                    // 局部更新 UI：不再重置偏移和滚动条，仅更新特定行
+                    const toggleBtns = document.querySelectorAll(`button[onclick*="toggleChannel(${id})"]`);
+                    toggleBtns.forEach(btn => {
+                        const enable = updated.is_enabled !== false;
+                        btn.innerText = enable ? '禁用' : '启用';
+                        btn.style.background = enable ? '#ef4444' : '#10b981';
+                        // 更新行样式
+                        const tr = btn.closest('tr');
+                        if (tr) {
+                            tr.style.opacity = enable ? '1' : '0.5';
+                            tr.style.background = enable ? 'transparent' : 'rgba(0,0,0,0.2)';
+                        }
+                    });
+                    updatePreviewStats();
                 }
             } catch (err) {
                 alert("操作失败: " + err.message);
@@ -1705,7 +1718,7 @@
             }
         }
 
-        async function fetchOutputs() {
+        async function fetchOutputs(isSilence = false) {
             try {
                 const res = await fetch('/outputs/');
                 const data = await res.json();
@@ -1717,9 +1730,33 @@
                     return;
                 }
 
+                if (isSilence) {
+                    // 静默刷新：只更新状态文字和时间，不重绘整个列表以防闪烁
+                    data.forEach(o => {
+                        const card = document.querySelector(`.output-item-card[data-id="${o.id}"]`);
+                        if (!card) return;
+
+                        // 更新最后同步时间
+                        const syncStatus = card.querySelector('.sync-status-text');
+                        if (syncStatus) {
+                            const statusColor = o.last_update_status && (o.last_update_status.includes('失败') || o.last_update_status.includes('Error')) ? '#ef4444' : '#10b981';
+                            syncStatus.style.color = statusColor;
+                            syncStatus.innerText = `最后同步: ${formatDate(o.last_updated)} (${o.last_update_status || '等待更新'})`;
+                        }
+
+                        // 更新倒计时 data 属性，防止循环触发
+                        const timer = card.querySelector('.countdown-timer');
+                        if (timer) {
+                            timer.dataset.last = o.last_updated || '';
+                        }
+                    });
+                    return;
+                }
+
                 list.innerHTML = data.map(o => {
                     const statusColor = o.last_update_status && (o.last_update_status.includes('失败') || o.last_update_status.includes('Error')) ? '#ef4444' : '#10b981';
                     const subIds = JSON.parse(o.subscription_ids || "[]");
+                    // ... (保持原有的 card HTML 生成逻辑不变) ...
                     let keywordsArr = [];
                     try { keywordsArr = JSON.parse(o.keywords || "[]"); } catch (e) { }
 
@@ -1755,7 +1792,7 @@
                             </div>
                             <div style="font-size: 0.85em; opacity: 0.7; margin-top: 6px; display: flex; align-items: center; gap: 10px;">
                                 <span>正则: <code>${o.filter_regex || '.*'}</code></span>
-                                ${o.auto_update_minutes > 0 ? `<span style="color: #a5b4fc;">• 🔄 每${o.auto_update_minutes >= 60 ? o.auto_update_minutes / 60 + '时' : o.auto_update_minutes + '分'}同步</span> <span id="countdown_${o.id}" class="countdown-timer" data-last="${o.last_updated}" data-interval="${o.auto_update_minutes}" style="color: #fbbf24; margin-left: 2px; font-size: 0.9em;"></span>` : ''}
+                                ${o.auto_update_minutes > 0 && o.is_enabled !== false ? `<span style="color: #a5b4fc;">• 🔄 每${o.auto_update_minutes >= 60 ? o.auto_update_minutes / 60 + '时' : o.auto_update_minutes + '分'}同步</span> <span id="countdown_${o.id}" class="countdown-timer" data-last="${o.last_updated}" data-interval="${o.auto_update_minutes}" style="color: #fbbf24; margin-left: 2px; font-size: 0.9em;"></span>` : ''}
                                 ${o.auto_visual_check ? `<span style="color: #fbbf24;">• 📺 自动检测</span>` : ''}
                             </div>
                             <div style="font-size: 0.8em; opacity: 0.5; margin-top: 6px;">
@@ -1837,10 +1874,14 @@
 
         function showStatus(msg) {
             const s = document.getElementById('status');
+            if (!s) {
+                showToast(msg, 'info'); // 降级到 toast 提示
+                return;
+            }
             s.innerText = msg;
             s.style.display = 'block';
             s.style.background = '#6366f1';
-            setTimeout(() => s.style.display = 'none', 3000);
+            setTimeout(() => { if (s) s.style.display = 'none'; }, 3000);
         }
 
         // --- 多选及统计逻辑 ---
@@ -1928,17 +1969,10 @@
 
             const btnId = enable ? 'batch_enable_btn' : 'batch_disable_btn';
             const btn = document.getElementById(btnId);
-            const originalText = btn.innerText;
-            btn.disabled = true;
+            const originalText = btn ? btn.innerText : '';
+            if (btn) btn.disabled = true;
 
-            // 找找看有哪些真的需要改
-            const targets = [];
-            window.selectedChannelIds.forEach(id => {
-                // 只能找到当前搜出来的，如果用户改了搜索词，可能找不到对象
-                // 但 ID 还在 Set 里，所以批量操作还是有效的
-            });
-
-
+            // ... (targets 部分省略，逻辑保持不变) ...
 
             let changedCount = 0;
             const total = window.selectedChannelIds.size;
@@ -1946,7 +1980,7 @@
 
             for (const id of window.selectedChannelIds) {
                 index++;
-                btn.innerText = `处理中 ${index}/${total}`;
+                if (btn) btn.innerText = `处理中 ${index}/${total}`;
 
                 const c = currentChannels.find(ch => ch.id === id);
                 if (c) {
@@ -1964,15 +1998,28 @@
                 }
             }
 
-            btn.innerText = originalText;
-            btn.disabled = false;
+            if (btn) {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
 
             // Update UI
-            updateSelectionUI(); // 刷下统计
-            // 刷新表，看看改动
-            renderOffset = 0;
-            document.getElementById('channel_list_container').scrollTop = 0;
-            renderBaseTable(document.getElementById('channel_list'), window.lastRenderShowActions);
+            // 不再重置 renderOffset 和界面滚动
+            // 遍历所有选中的 ID 并局部更新 DOM
+            window.selectedChannelIds.forEach(id => {
+                const toggleBtns = document.querySelectorAll(`button[onclick*="toggleChannel(${id})"]`);
+                toggleBtns.forEach(btn => {
+                    btn.innerText = enable ? '禁用' : '启用';
+                    btn.style.background = enable ? '#ef4444' : '#10b981';
+                    const tr = btn.closest('tr');
+                    if (tr) {
+                        tr.style.opacity = enable ? '1' : '0.5';
+                        tr.style.background = enable ? 'transparent' : 'rgba(0,0,0,0.2)';
+                    }
+                });
+            });
+
+            updateSelectionUI(); // 刷下复选框和统计框
 
             showToast(`批量操作完成，共修改 ${changedCount} 个频道`, 'success');
         }
@@ -2028,9 +2075,20 @@
 
                     t.innerText = text;
                     t.style.opacity = '0.9';
-                } else {
-                    t.innerText = '(准备更新...)';
-                    t.style.opacity = '1';
+                }
+                if (diff <= 0) {
+                    t.innerText = "(准备更新...)";
+                    t.style.color = "#fbbf24";
+                    // 倒计时结束，静默拉取一次最新数据，延迟一段时间确保后端已处理
+                    if (!t.dataset.refreshing) {
+                        t.dataset.refreshing = "true";
+                        setTimeout(() => {
+                            fetchOutputs(true).then(() => {
+                                delete t.dataset.refreshing;
+                            });
+                        }, 5000);
+                    }
+                    return;
                 }
             });
         }

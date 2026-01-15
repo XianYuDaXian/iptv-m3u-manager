@@ -7,7 +7,6 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1
 
 # 更新源并安装 Python 3.10、FFmpeg、Git 等依赖
-# ubuntu:22.04 默认 python3 就是 3.10
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
@@ -15,6 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     ffmpeg \
     curl \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # 建立 python 命令的软链接 (ubuntu 默认只有 python3)

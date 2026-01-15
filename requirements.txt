@@ -2,6 +2,8 @@ fastapi
 uvicorn
 sqlmodel
 aiohttp
+taskiq
+taskiq-aiohttp
 static-ffmpeg
 python-dateutil
 zhconv

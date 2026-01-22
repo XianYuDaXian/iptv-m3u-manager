@@ -6,8 +6,11 @@ class M3UGenerator:
     """M3U 生成器"""
     
     @staticmethod
-    def filter_channels(channels: List[Channel], regex_pattern: str, keywords: List[dict] = None) -> List[Channel]:
-        """根据关键字和正则筛选频道"""
+    def filter_channels(channels: List[Channel], regex_pattern: str, keywords: List[dict] = None, excluded_ids: List[int] = None) -> List[Channel]:
+        """根据关键字和正则筛选频道，并排除指定 ID 的频道"""
+        # 转换排除列表为集合，便于快速查找
+        excluded_set = set(excluded_ids) if excluded_ids else set()
+        
         filtered = []
         
         # 关键字筛选
@@ -27,6 +30,9 @@ class M3UGenerator:
                         continue
                     if c.url in seen_urls:
                         continue
+                    # 跳过聚合表级别排除的频道
+                    if c.id in excluded_set:
+                        continue
                         
                     if k_val in c.name.lower():
                         # 命中关键字
@@ -43,6 +49,9 @@ class M3UGenerator:
             # 没关键字就按 URL 去重
             seen_urls = set()
             for c in channels:
+                # 跳过聚合表级别排除的频道
+                if c.id in excluded_set:
+                    continue
                 if c.url not in seen_urls:
                     filtered.append(c.model_copy())
                     seen_urls.add(c.url)

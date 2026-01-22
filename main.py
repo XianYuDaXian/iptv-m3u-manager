@@ -153,6 +153,14 @@ def migrate_db():
             session.exec(text("ALTER TABLE outputsource ADD COLUMN auto_visual_check BOOLEAN DEFAULT 0"))
             session.commit()
 
+        # 聚合表级别频道排除功能
+        try:
+            session.exec(text("SELECT excluded_channel_ids FROM outputsource LIMIT 1"))
+        except:
+            print("正在迁移 OutputSource 表: 添加 excluded_channel_ids 字段")
+            session.exec(text("ALTER TABLE outputsource ADD COLUMN excluded_channel_ids VARCHAR DEFAULT '[]'"))
+            session.commit()
+
 async def auto_update_task():
     """后台自动同步订阅"""
     while True:

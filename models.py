@@ -47,6 +47,7 @@ class OutputSource(SQLModel, table=True):
     filter_regex: str = Field(default=".*") # 正则过滤规则
     keywords: str = Field(default="[]") # 筛选关键字 (JSON)
     subscription_ids: str = Field(default="[]") # 关联订阅 ID (JSON)
+    excluded_channel_ids: str = Field(default="[]") # 排除的频道 ID (JSON) - 聚合表级别排除
     last_updated: datetime = Field(default_factory=datetime.utcnow) # 最后同步时间
     last_update_status: Optional[str] = None # 最后同步状态
     last_request_time: Optional[datetime] = None # 最近被请求的时间

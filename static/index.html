@@ -127,7 +127,7 @@
                 </div>
                 <div style="display: flex; gap: 10px;">
                     <button id="sub_btn" class="btn" onclick="addSubscription()">添加订阅</button>
-                    <button id="sub_cancel_btn" class="btn" style="display: none; background: rgba(255,255,255,0.1);"
+                    <button id="sub_cancel_btn" class="btn btn-secondary" style="display: none;"
                         onclick="cancelEditSub()">取消修改</button>
                 </div>
             </div>
@@ -233,6 +233,9 @@
                                 style="background: transparent; border: none; outline: none; flex-grow: 2; padding: 0;">
                         </div>
                     </div>
+                    <div id="global_preview_stats"
+                        style="margin-top: -8px; margin-bottom: 12px; font-size: 0.82em; background: var(--input-bg); padding: 4px 10px; border-radius: 6px; border-left: 3px solid var(--primary); display: none; align-items: center; gap: 5px; color: var(--text-muted);">
+                    </div>
                     <div id="preview_window" class="preview-float"></div>
                 </div>
             </div>
@@ -241,7 +244,7 @@
             <div style="display: flex; gap: 10px; margin-bottom: 16px;">
                 <button id="out_btn" class="btn" style="width: 100%;" onclick="saveOutput()">生成专属 M3U 聚合
                     URL</button>
-                <button id="out_cancel_btn" class="btn" style="display: none; background: rgba(255,255,255,0.1);"
+                <button id="out_cancel_btn" class="btn btn-secondary" style="display: none;"
                     onclick="cancelEditOutput()">取消修改</button>
             </div>
     </div>
@@ -879,11 +882,13 @@
                 } catch (e) { }
 
                 const subIds = JSON.parse(out.subscription_ids || "[]");
+                const excludedIds = JSON.parse(out.excluded_channel_ids || "[]");
 
                 const payload = {
                     subscription_ids: subIds,
                     keywords: keywords,
-                    filter_regex: out.filter_regex
+                    filter_regex: out.filter_regex,
+                    excluded_channel_ids: excludedIds
                 };
 
                 const res = await fetch('/outputs/preview', {
@@ -896,10 +901,11 @@
 
                 // 把结果铺平并去重（避免一个频道匹配多个关键字导致多次出现）
                 const seenIds = new Set();
+                const excludedSet = new Set(excludedIds.map(id => parseInt(id))); // 确保是数字集合
                 let flatChannels = [];
                 for (const [key, list] of Object.entries(data)) {
                     list.forEach(c => {
-                        if (!seenIds.has(c.id)) {
+                        if (!seenIds.has(c.id) && !excludedSet.has(c.id)) {
                             seenIds.add(c.id);
                             flatChannels.push(c);
                         }
@@ -1757,6 +1763,7 @@
         // 预览全局状态
         let lastPreviewData = {};
         let activeKeyword = null; // 存的是字符串
+        let excludedChannelIds = new Set(); // 聚合表级别排除的频道 ID
 
         function renderTags() {
             const container = document.getElementById('tag_container');
@@ -1798,7 +1805,10 @@
             renderTags();
             // 防抖
             clearTimeout(window.previewDebounceTimer);
-            window.previewDebounceTimer = setTimeout(updateRealtimePreview, 300);
+            window.previewDebounceTimer = setTimeout(() => {
+                updateRealtimePreview();
+            }, 300);
+            refreshGlobalStats();
         }
 
         function selectKeyword(k) {
@@ -1846,6 +1856,35 @@
             renderPreviewGroup(kObj, lastPreviewData[displayKey] || []);
         }
 
+        function updateGlobalStats(included, excluded) {
+            const el = document.getElementById('global_preview_stats');
+            if (!el) return;
+            if ((included === 0 && excluded === 0) || keywords.length === 0) {
+                el.style.display = 'none';
+                el.innerHTML = '';
+                return;
+            }
+            el.style.display = 'flex';
+            el.innerHTML = `入选: <strong style="color:var(--text)">${included}</strong> | 排除: <strong style="color: #ef4444;">${excluded}</strong>`;
+        }
+
+        function refreshGlobalStats() {
+            if (!lastPreviewData) return;
+            let totalMatched = 0;
+            let totalExcluded = 0;
+            const seenIds = new Set();
+            for (const key in lastPreviewData) {
+                lastPreviewData[key].forEach(c => {
+                    if (!seenIds.has(c.id)) {
+                        seenIds.add(c.id);
+                        totalMatched++;
+                        if (excludedChannelIds.has(c.id)) totalExcluded++;
+                    }
+                });
+            }
+            updateGlobalStats(totalMatched - totalExcluded, totalExcluded);
+        }
+
         function renderPreviewGroup(kObj, channels) {
             const previewWin = document.getElementById('preview_window');
             if (!kObj) return;
@@ -1853,38 +1892,76 @@
             const key = kObj.value;
             const groupVal = kObj.group || '';
 
-            const channelsHtml = (channels && channels.length > 0) ? channels.map(c => `
-                    <div class="preview-item">
+            const channelsHtml = (channels && channels.length > 0) ? channels.map(c => {
+                // 使用本地排除列表判断是否在此聚合表中排除
+                const isExcluded = excludedChannelIds.has(c.id);
+                const disabledStyle = isExcluded ? 'opacity: 0.5; text-decoration: line-through;' : '';
+                const btnStyle = isExcluded
+                    ? 'background: #10b981; color: white;'
+                    : 'background: #ef4444; color: white;';
+                const btnText = isExcluded ? '恢复' : '排除';
+
+                return `
+                    <div class="preview-item" style="${disabledStyle}">
                         ${c.logo ? `<img src="${c.logo}" onerror="this.style.display='none'">` : '<div style="width:20px"></div>'}
                         <div style="flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                            <strong>${c.name}</strong><br>
+                            <strong>${c.name}</strong>${isExcluded ? ' <span style="color: #ef4444; font-size: 0.8em;">[已排除]</span>' : ''}<br>
                             <small style="opacity: 0.8; font-size: 0.85em; color: #a5b4fc;">来源: ${c.source}</small>
                         </div>
                         <small style="opacity: 0.4; margin-left: 5px;">${c.group || '默认'}</small>
+                        <button onclick="event.stopPropagation(); toggleExcludeChannel(${c.id})" 
+                                style="${btnStyle} border: none; border-radius: 4px; padding: 2px 8px; font-size: 0.75em; cursor: pointer; margin-left: 8px; white-space: nowrap;">
+                            ${btnText}
+                        </button>
                     </div>
-                `).join('') : '<div style="opacity: 0.5; padding: 10px;">该标签下没有匹配的频道</div>';
+                `;
+            }).join('') : '<div style="opacity: 0.5; padding: 10px;">该标签下没有匹配的频道</div>';
+
+            // 统计启用和排除数量
+            const excludedCount = channels ? channels.filter(c => excludedChannelIds.has(c.id)).length : 0;
+            const includedCount = channels ? channels.length - excludedCount : 0;
+            const statsHtml = `<span style="font-size: 0.8em; opacity: 0.5; margin-left: 5px;">入选: ${includedCount} | 排除: <span style="color: #ef4444;">${excludedCount}</span></span>`;
 
             const html = `
-                <div id="preview-group-${key}" style="margin-top: 5px; border-left: 3px solid var(--primary); padding-left: 8px; margin-bottom: 5px; background: rgba(255,255,255,0.03); display: flex; align-items: center; justify-content: space-between; padding-right: 10px;">
+                <div id="preview-group-${key}" style="margin-top: 5px; border-left: 3px solid var(--primary); padding-left: 8px; margin-bottom: 5px; background: var(--input-bg); display: flex; align-items: center; justify-content: space-between; padding-right: 10px;">
                     <div>
                         <small style="color: var(--primary); font-weight: bold; text-transform: uppercase;">${key}</small>
-                        <span style="font-size: 0.8em; opacity: 0.5; margin-left: 5px;">匹配: ${channels ? channels.length : 0}</span>
+                        ${statsHtml}
                     </div>
                     <input type="text" placeholder="设置分组" value="${groupVal}" 
                         onchange="updateKeywordGroup('${key.replace(/'/g, "\\'")}', this.value)"
-                        style="background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 4px; padding: 2px 8px; width: 120px; font-size: 0.85em; color: #fff;">
+                        style="background: var(--bg-body); border: 1px solid var(--glass-border); border-radius: 4px; padding: 2px 8px; width: 120px; font-size: 0.85em; color: var(--text);">
                 </div>
                 ${channelsHtml}
             `;
 
             previewWin.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px; background: var(--preview-bg); color: var(--text);">
                     <span style="opacity: 0.7; font-size: 0.8em;">匹配与分组设置:</span>
                     <span onclick="document.getElementById('preview_window').style.display='none'" 
                           style="cursor:pointer; font-size: 1.2em; line-height: 0.5; opacity: 0.8;">&times;</span>
                 </div>
                 ${html}`;
             previewWin.style.display = 'block';
+        }
+
+        // 切换频道在当前聚合表中的排除状态（本地操作，保存时一起提交）
+        function toggleExcludeChannel(channelId) {
+            console.log('[排除调试] 当前排除列表:', Array.from(excludedChannelIds));
+            console.log('[排除调试] 点击的频道ID:', channelId);
+
+            if (excludedChannelIds.has(channelId)) {
+                excludedChannelIds.delete(channelId);
+                showToast('频道已恢复入选', 'success');
+            } else {
+                excludedChannelIds.add(channelId);
+                showToast('频道已排除', 'info');
+            }
+
+            console.log('[排除调试] 更新后排除列表:', Array.from(excludedChannelIds));
+            // 重新渲染当前预览
+            renderSelectedPreview();
+            refreshGlobalStats();
         }
 
         // 弹窗系统
@@ -1949,6 +2026,10 @@
                 }
 
                 renderTags();
+
+                // 全局统计计算
+                refreshGlobalStats();
+
                 renderSelectedPreview();
 
             } catch (err) {
@@ -2192,6 +2273,13 @@
                 cb.checked = subIds.includes(parseInt(cb.value));
             });
 
+            // 还原排除列表
+            excludedChannelIds = new Set();
+            try {
+                const excludedIds = JSON.parse(out.excluded_channel_ids || "[]");
+                excludedIds.forEach(id => excludedChannelIds.add(id));
+            } catch (e) { excludedChannelIds = new Set(); }
+
             // 换 UI
             document.getElementById('out_btn').innerText = '保存修改';
             document.getElementById('out_cancel_btn').style.display = 'block';
@@ -2218,6 +2306,7 @@
             keywords = [];
             renderTags();
             activeKeyword = null;
+            excludedChannelIds = new Set(); // 清空排除列表
 
             document.querySelectorAll('input[name="selected_subs"]').forEach(cb => cb.checked = false);
 
@@ -2246,6 +2335,7 @@
                 filter_regex: document.getElementById('out_regex').value,
                 keywords: JSON.stringify(keywords), // Assuming 'keywords' is the global variable for tags
                 subscription_ids: JSON.stringify(selectedSubs),
+                excluded_channel_ids: JSON.stringify(Array.from(excludedChannelIds)), // 聚合表级别排除列表
                 epg_url: document.getElementById('out_epg').value,
                 include_source_suffix: document.getElementById('out_include_suffix').checked,
                 is_enabled: document.getElementById('out_is_enabled').checked,

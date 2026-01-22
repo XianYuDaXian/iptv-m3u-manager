@@ -379,16 +379,9 @@
     --info: #3b82f6;
 
     /* 特定组件 */
-    --modal-bg: rgba(18, 18, 18, 0.95);
-    --modal-header: #1e1e1e;
-    --input-bg: rgba(255, 255, 255, 0.08);
-    /* 半透明白 */
-    --code-bg: rgba(0, 0, 0, 0.3);
-    --code-text: #86efac;
-    --btn-text: #ffffff;
-    /* 按钮文字保持白色以确保在 Primary色上可见 */
-    --text-highlight: #34d399;
-    --text-loading: #a5b4fc;
+    --preview-bg: rgba(15, 23, 42, 0.98);
+    --btn-secondary-bg: rgba(255, 255, 255, 0.1);
+    --btn-secondary-text: #ffffff;
     --checkbox-border: rgba(255, 255, 255, 0.3);
 }
 
@@ -425,6 +418,9 @@
     --modal-header: #ffffff;
     --input-bg: #f1f5f9;
     /* Slate 100 */
+    --preview-bg: #ffffff;
+    --btn-secondary-bg: #e2e8f0;
+    --btn-secondary-text: #1e293b;
     --code-bg: #e2e8f0;
     --code-text: #334155;
     --btn-text: #ffffff;
@@ -582,6 +578,11 @@ h2 {
     min-width: 90px;
     box-sizing: border-box;
     white-space: nowrap;
+}
+
+.btn-secondary {
+    background: var(--btn-secondary-bg) !important;
+    color: var(--btn-secondary-text) !important;
 }
 
 .sub-item:hover {
@@ -773,7 +774,7 @@ textarea {
     left: 0;
     bottom: 100%;
     /* 向上浮出 */
-    background: rgba(15, 23, 42, 0.98);
+    background: var(--preview-bg);
     backdrop-filter: blur(20px);
     border: 1px solid var(--primary);
     border-radius: 8px;
@@ -785,7 +786,8 @@ textarea {
     overflow-y: auto;
     display: none;
     font-size: 0.9em;
-    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
+    color: var(--text);
+    box-shadow: 0 -10px 40px var(--shadow);
     /* 投影方向也向上 */
     scroll-behavior: smooth;
     box-sizing: border-box;
@@ -795,8 +797,12 @@ textarea {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 4px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+[data-theme="light"] .preview-item small {
+    color: var(--text-muted) !important;
 }
 
 .preview-item img {

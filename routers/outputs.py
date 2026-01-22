@@ -46,8 +46,14 @@ def list_outputs(session: Session = Depends(get_session)):
             keywords = json.loads(out.keywords)
         except:
             keywords = []
+        
+        # 解析排除列表
+        try:
+            excluded_ids = json.loads(out.excluded_channel_ids or "[]")
+        except:
+            excluded_ids = []
             
-        filtered = M3UGenerator.filter_channels(channels, out.filter_regex, keywords)
+        filtered = M3UGenerator.filter_channels(channels, out.filter_regex, keywords, excluded_ids)
         
         total = len(filtered)
         enabled = len([c for c in filtered if c.is_enabled])
@@ -97,6 +103,7 @@ def update_output(output_id: int, output_data: OutputSource, session: Session = 
     output.is_enabled = output_data.is_enabled
     output.auto_update_minutes = output_data.auto_update_minutes
     output.auto_visual_check = output_data.auto_visual_check
+    output.excluded_channel_ids = output_data.excluded_channel_ids
     
     session.add(output)
     session.commit()
@@ -109,6 +116,12 @@ def preview_output(data: dict, session: Session = Depends(get_session)):
     sub_ids = data.get("subscription_ids", [])
     raw_keywords = data.get("keywords", [])
     regex = data.get("filter_regex", ".*")
+    excluded_ids = data.get("excluded_channel_ids", [])  # 聚合表级别排除
+    # 确保 ID 都是整数，防止前端传字符串导致匹配失败
+    try:
+        excluded_set = {int(i) for i in excluded_ids} if excluded_ids else set()
+    except:
+        excluded_set = set()
     
     # 整理关键字列表
     keywords = []
@@ -126,6 +139,10 @@ def preview_output(data: dict, session: Session = Depends(get_session)):
         channels = session.exec(select(Channel).where(Channel.subscription_id.in_(active_sub_ids))).all()
     else:
         channels = []
+    
+    # 预览时不在此处过滤，由前端通过 excluded_channel_ids 显示恢复/排除按钮
+    # if excluded_set:
+    #     channels = [c for c in channels if c.id not in excluded_set]
         
     # 获取订阅名，方便看来源
     subs = session.exec(select(Subscription)).all()
@@ -165,6 +182,7 @@ def preview_output(data: dict, session: Session = Depends(get_session)):
             ]
             
     return results
+
 
 @router.post("/outputs/{output_id}/refresh")
 async def refresh_output(output_id: int, background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
@@ -421,8 +439,14 @@ async def get_m3u_output(slug: str, session: Session = Depends(get_session)):
                 keywords.append(k)
     except:
         keywords = []
+    
+    # 解析排除列表
+    try:
+        excluded_ids = json.loads(out.excluded_channel_ids or "[]")
+    except:
+        excluded_ids = []
         
     # 过滤、生成 M3U 
-    filtered = M3UGenerator.filter_channels(channels, out.filter_regex, keywords)
+    filtered = M3UGenerator.filter_channels(channels, out.filter_regex, keywords, excluded_ids)
     m3u_content = M3UGenerator.generate_m3u(filtered, sub_map, out.epg_url, out.include_source_suffix)
     return Response(content=m3u_content, media_type="application/x-mpegurl; charset=utf-8")

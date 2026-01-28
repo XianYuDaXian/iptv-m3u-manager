@@ -99,13 +99,13 @@
                 <input type="hidden" id="edit_sub_id">
                 <input type="hidden" id="sub_is_enabled" value="true">
                 <div class="form-group">
-                    <input type="text" id="sub_name" placeholder="名称 (例如: 卫视精品)">
+                    <input type="text" id="sub_name" placeholder="名称 (例如: 卫视精品)" aria-label="订阅名称">
                 </div>
                 <div class="form-group">
-                    <input type="text" id="sub_url" placeholder="M3U URL (多个地址请用英文逗号隔开)">
+                    <input type="text" id="sub_url" placeholder="M3U URL (多个地址请用英文逗号隔开)" aria-label="M3U URL">
                 </div>
                 <div class="form-group" id="ua_form_group">
-                    <input type="text" id="sub_ua" list="ua_options" placeholder="User-Agent (可选，推荐选择下方常用 UA)" value="">
+                    <input type="text" id="sub_ua" list="ua_options" placeholder="User-Agent (可选，推荐选择下方常用 UA)" value="" aria-label="User-Agent">
                     <datalist id="ua_options">
                         <option value="AptvPlayer/1.4.1">APTV (iOS/Apple TV) - 推荐</option>
                         <option value="TiviMate/5.2.0 (Android 15)">TiviMate (Android TV) - 推荐</option>
@@ -115,7 +115,7 @@
                     </datalist>
                 </div>
                 <div class="form-group">
-                    <select id="sub_auto_update"
+                    <select id="sub_auto_update" aria-label="订阅自动更新间隔"
                         style="width: 100%; padding: 12px; background: var(--input-bg); border: 1px solid var(--glass-border); color: var(--text); border-radius: 8px; outline: none;">
                         <option value="0">自动更新: 关闭 (手动刷新)</option>
                         <option value="2">自动更新: 每 2 分钟 (测试用)</option>
@@ -145,8 +145,8 @@
                     <label
                         style="display: block; margin-bottom: 8px; opacity: 0.9; font-size: 0.95em; font-weight: 500;">名称与后缀</label>
                     <div style="display: flex; gap: 10px;">
-                        <input type="text" id="out_name" placeholder="聚合名称 (例如: 家庭精选)">
-                        <input type="text" id="out_slug" placeholder="URL 后缀 (例如: family)">
+                        <input type="text" id="out_name" placeholder="聚合名称 (例如: 家庭精选)" aria-label="聚合名称">
+                        <input type="text" id="out_slug" placeholder="URL 后缀 (例如: family)" aria-label="URL 后缀">
                     </div>
                 </div>
 
@@ -170,14 +170,14 @@
                     <label
                         style="display: block; margin-bottom: 8px; opacity: 0.9; font-size: 0.95em; font-weight: 500;">高级正则
                         (可选)</label>
-                    <input type="text" id="out_regex" placeholder="CCTV.* (非专业人士建议留空)" value=".*">
+                    <input type="text" id="out_regex" placeholder="CCTV.* (非专业人士建议留空)" value=".*" aria-label="正则">
                 </div>
 
                 <div class="form-group">
                     <label
                         style="display: block; margin-bottom: 8px; opacity: 0.9; font-size: 0.95em; font-weight: 500;">EPG
                         节目预告 (可选)</label>
-                    <input type="text" id="out_epg" placeholder="EPG XML 链接 (例如: http://epg.51zmt.top:8000/api/xml/)">
+                    <input type="text" id="out_epg" placeholder="EPG XML 链接 (例如: http://epg.51zmt.top:8000/api/xml/)" aria-label="EPG节目预告链接">
                 </div>
 
                 <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
@@ -200,7 +200,7 @@
                 <div class="form-group"
                     style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px; background: var(--input-bg); padding: 10px; border-radius: 10px; border: 1px solid var(--glass-border);">
                     <div style="flex: 1;">
-                        <select id="out_auto_update"
+                        <select id="out_auto_update" aria-label="聚合源自动更新间隔"
                             style="width: 100%; padding: 10px; background: transparent; border: 1px solid var(--glass-border); color: var(--text); border-radius: 8px; outline: none; font-size: 0.9em; cursor: pointer;">
                             <option value="0">自动更新: 关闭 (手动刷新)</option>
                             <option value="2">自动更新: 每 2 分钟 (测试用)</option>
@@ -229,7 +229,7 @@
                         (回车查看下方预览)</label>
                     <div id="tag_container" class="tag-container">
                         <div style="display: flex; flex-grow: 1; align-items: center; gap: 5px;">
-                            <input type="text" id="tag_input" placeholder="关键字"
+                            <input type="text" id="tag_input" placeholder="关键字" aria-label="关键字筛选输入"
                                 style="background: transparent; border: none; outline: none; flex-grow: 2; padding: 0;">
                         </div>
                     </div>
@@ -247,10 +247,10 @@
                 <button id="out_cancel_btn" class="btn btn-secondary" style="display: none;"
                     onclick="cancelEditOutput()">取消修改</button>
             </div>
+        </section>
     </div>
 
-    </section>
-    </div>
+
 
 
     <div id="channel_modal" class="modal" onclick="if(event.target == this) closePreview()">
@@ -270,7 +270,7 @@
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <div style="display: flex; gap: 5px; flex-grow: 1;">
                         <input type="text" id="channel_search" placeholder="🔍 搜索频道名称..."
-                            oninput="debounceSearchChannels()"
+                            oninput="debounceSearchChannels()" aria-label="频道名称搜索"
                             style="width: 100%; padding: 0 12px; font-size: 0.9em; min-width: 150px; height: 36px;">
                     </div>
 
@@ -1765,26 +1765,29 @@
         let activeKeyword = null; // 存的是字符串
         let excludedChannelIds = new Set(); // 聚合表级别排除的频道 ID
 
-        function renderTags() {
+        function renderTags(shouldFocus = true) {
             const container = document.getElementById('tag_container');
             const input = document.getElementById('tag_input');
 
-            // 删掉旧标签
+            // 清理编辑模式状态（如果有）
+            container.classList.remove('editing-mode');
+            container.querySelectorAll('.tag-editor-overlay').forEach(el => el.remove());
+
             container.querySelectorAll('.tag').forEach(el => el.remove());
 
-            // 构建 HTML
-            const tagsHtml = keywords.map(k => {
+            const tagsHtml = keywords.map((k, index) => {
                 const isActive = k.value === activeKeyword ? 'active-tag' : '';
                 const display = k.group ? `${k.value} <span style="opacity:0.6; font-size:0.9em">→ ${k.group}</span>` : k.value;
                 return `
-                    <span class="tag ${isActive}" onclick="selectKeyword('${k.value.replace(/'/g, "\\'")}')">
-                        ${display}
-                        <span class="tag-remove" onclick="event.stopPropagation(); removeTag('${k.value.replace(/'/g, "\\'")}')">&times;</span>
+                    <span class="tag ${isActive}"
+                          data-tag-index="${index}"
+                          data-tag-value="${k.value.replace(/"/g, '&quot;')}">
+                        <span class="tag-content">${display}</span>
+                        <span class="tag-remove">&times;</span>
                     </span>
                 `;
             }).join('');
 
-            // 还原 HTML
             container.innerHTML = tagsHtml + `
                 <div style="display: flex; flex-grow: 1; align-items: center; gap: 5px;">
                     <input type="text" id="tag_input" placeholder="关键字" value="${input.value}"
@@ -1792,12 +1795,611 @@
                 </div>
             `;
 
-            // 重新绑事件
             document.getElementById('tag_input').addEventListener('keydown', handleTagInput);
-            document.getElementById('tag_input').focus();
+            if (shouldFocus) {
+                document.getElementById('tag_input').focus();
+            }
+            initTagInteractions();
         }
 
-        function removeTag(val) {
+        const TagDragManager = {
+            isDragging: false,
+            draggedEl: null,
+            draggedIndex: null,
+            originalTag: null,
+            startX: 0,
+            startY: 0,
+            offsetX: 0,
+            offsetY: 0,
+            longPressTimer: null,
+            LONG_PRESS_DELAY: 350,
+            lastClickTime: 0,
+            lastClickTag: null,
+            DOUBLE_CLICK_DELAY: 300,
+            mobileDoubleTapDelay: 400,
+            targetIndex: null,
+            boundMove: null,
+            boundUp: null,
+            pendingSingleClick: null,
+
+            init() {
+                const container = document.getElementById('tag_container');
+                const tags = container.querySelectorAll('.tag');
+
+                tags.forEach((tag) => {
+                    const index = parseInt(tag.dataset.tagIndex);
+                    tag.addEventListener('mousedown', (e) => this.onPointerDown(e, tag, index, 'mouse'));
+                    tag.addEventListener('touchstart', (e) => this.onPointerDown(e, tag, index, 'touch'), { passive: false });
+
+                    // 阻止右键菜单（移动端长按菜单）
+                    tag.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        return false;
+                    });
+
+                    const removeBtn = tag.querySelector('.tag-remove');
+                    if (removeBtn) {
+                        removeBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            removeTag(tag.dataset.tagValue);
+                        });
+                        removeBtn.addEventListener('touchend', (e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            removeTag(tag.dataset.tagValue);
+                        });
+                    }
+                });
+
+                // 全局拖拽状态清理
+                this.setupGlobalCleanup();
+            },
+
+            setupGlobalCleanup() {
+                // 页面可见性变化时清理拖拽状态（切换标签页时）
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden && this.isDragging) {
+                        this.forceCleanupDrag();
+                    }
+                });
+
+                // 全局鼠标松开监听（防止事件丢失）
+                document.addEventListener('mouseup', (e) => {
+                    if (this.isDragging) {
+                        this.endDrag();
+                    }
+                }, { capture: true });
+
+                // 触摸结束监听（防止移动端事件丢失）
+                document.addEventListener('touchend', (e) => {
+                    if (this.isDragging && this.pointerType === 'touch') {
+                        this.endDrag();
+                    }
+                }, { capture: true });
+            },
+
+            forceCleanupDrag() {
+                if (this.isDragging) {
+                    // 取消拖拽，恢复原状
+                    if (this.draggedEl && this.draggedEl.parentNode) {
+                        this.draggedEl.remove();
+                    }
+                    const container = document.getElementById('tag_container');
+                    container.querySelectorAll('.tag').forEach(t => {
+                        t.classList.remove('tag-shift-left', 'tag-shift-right');
+                        t.style.transform = '';
+                        t.style.transition = '';
+                        t.style.visibility = '';
+                        t.removeAttribute('data-dragging');
+                    });
+                    container.classList.remove('dragging-active');
+                    this.targetIndex = null;
+                }
+
+                // 清理所有定时器
+                if (this.longPressTimer) {
+                    clearTimeout(this.longPressTimer);
+                    this.longPressTimer = null;
+                }
+                if (this.pendingSingleClick) {
+                    clearTimeout(this.pendingSingleClick);
+                    this.pendingSingleClick = null;
+                }
+
+                // 清理所有事件监听器
+                if (this.boundMove) {
+                    document.removeEventListener('mousemove', this.boundMove);
+                    document.removeEventListener('touchmove', this.boundMove);
+                    this.boundMove = null;
+                }
+                if (this.boundUp) {
+                    document.removeEventListener('mouseup', this.boundUp);
+                    document.removeEventListener('touchend', this.boundUp);
+                    document.removeEventListener('touchcancel', this.boundUp);
+                    this.boundUp = null;
+                }
+
+                // 重置所有状态
+                this.isDragging = false;
+                this.draggedEl = null;
+                this.draggedIndex = null;
+                this.originalTag = null;
+                this.pendingDrag = false;
+                this.pendingTag = null;
+                this.hasMoved = false;
+            },
+
+            getPointerPos(e, type) {
+                if (type === 'touch' && e.touches && e.touches.length > 0) {
+                    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+                if (type === 'touch' && e.changedTouches && e.changedTouches.length > 0) {
+                    return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+                }
+                return { x: e.clientX, y: e.clientY };
+            },
+
+            onPointerDown(e, tag, index, type) {
+                if (e.target.classList.contains('tag-remove')) return;
+
+                const pos = this.getPointerPos(e, type);
+                this.startX = pos.x;
+                this.startY = pos.y;
+                this.pendingTag = tag;
+                this.pendingIndex = index;
+                this.pointerType = type;
+                this.hasMoved = false;
+
+                this.boundMove = (ev) => this.onPointerMove(ev, type);
+                this.boundUp = (ev) => this.onPointerUp(ev, type);
+
+                if (type === 'touch') {
+                    // 阻止默认行为（文本选择、长按菜单等）
+                    e.preventDefault();
+
+                    document.addEventListener('touchmove', this.boundMove, { passive: false });
+                    document.addEventListener('touchend', this.boundUp);
+                    document.addEventListener('touchcancel', this.boundUp);
+
+                    this.longPressTimer = setTimeout(() => {
+                        if (!this.isDragging && !this.hasMoved) {
+                            this.startDrag(tag, index, pos);
+                            if (navigator.vibrate) navigator.vibrate(30);
+                        }
+                    }, this.LONG_PRESS_DELAY);
+                } else {
+                    document.addEventListener('mousemove', this.boundMove);
+                    document.addEventListener('mouseup', this.boundUp);
+                    this.pendingDrag = true;
+                }
+            },
+
+            onPointerMove(e, type) {
+                const pos = this.getPointerPos(e, type);
+                const dx = Math.abs(pos.x - this.startX);
+                const dy = Math.abs(pos.y - this.startY);
+
+                if (dx > 5 || dy > 5) {
+                    this.hasMoved = true;
+                }
+
+                if (this.longPressTimer) {
+                    if (dx > 10 || dy > 10) {
+                        clearTimeout(this.longPressTimer);
+                        this.longPressTimer = null;
+                    }
+                }
+
+                // PC端: 移动超过阈值才开始拖拽
+                if (this.pendingDrag && !this.isDragging && this.pendingTag) {
+                    if (dx > 8 || dy > 8) {
+                        this.startDrag(this.pendingTag, this.pendingIndex, { x: this.startX, y: this.startY });
+                        this.pendingDrag = false;
+                    }
+                }
+
+                if (this.isDragging && this.draggedEl) {
+                    if (type === 'touch') e.preventDefault();
+                    this.draggedEl.style.left = (pos.x - this.offsetX) + 'px';
+                    this.draggedEl.style.top = (pos.y - this.offsetY) + 'px';
+                    this.updateDropTarget(pos);
+                }
+            },
+
+            onPointerUp(e, type) {
+                clearTimeout(this.longPressTimer);
+                this.longPressTimer = null;
+
+                if (type === 'touch') {
+                    document.removeEventListener('touchmove', this.boundMove);
+                    document.removeEventListener('touchend', this.boundUp);
+                    document.removeEventListener('touchcancel', this.boundUp);
+                } else {
+                    document.removeEventListener('mousemove', this.boundMove);
+                    document.removeEventListener('mouseup', this.boundUp);
+                }
+
+                if (this.isDragging) {
+                    this.endDrag();
+                } else if (this.pendingTag && !this.hasMoved) {
+                    if (type === 'touch') {
+                        this.handleMobileTap(this.pendingTag);
+                    } else {
+                        this.handleClick(this.pendingTag);
+                    }
+                }
+
+                this.pendingDrag = false;
+                this.pendingTag = null;
+                this.hasMoved = false;
+            },
+
+            handleMobileTap(tag) {
+                // 拖拽中忽略点击
+                if (this.isDragging) return;
+                // 拖拽中的标签忽略点击
+                if (tag.getAttribute('data-dragging') === 'true') return;
+
+                const tagValue = tag.dataset.tagValue;
+                const now = Date.now();
+
+                if (now - this.lastClickTime < this.mobileDoubleTapDelay && this.lastClickTag === tagValue) {
+                    clearTimeout(this.pendingSingleClick);
+                    this.pendingSingleClick = null;
+                    this.enterEditMode(tag, tagValue);
+                    this.lastClickTime = 0;
+                    this.lastClickTag = null;
+                    return;
+                }
+
+                this.lastClickTime = now;
+                this.lastClickTag = tagValue;
+
+                if (this.pendingSingleClick) {
+                    clearTimeout(this.pendingSingleClick);
+                }
+
+                this.pendingSingleClick = setTimeout(() => {
+                    if (this.lastClickTag === tagValue) {
+                        selectKeyword(tagValue);
+                    }
+                    this.pendingSingleClick = null;
+                    this.lastClickTime = 0;
+                    this.lastClickTag = null;
+                }, this.mobileDoubleTapDelay);
+            },
+
+            handleClick(tag) {
+                const container = document.getElementById('tag_container');
+                if (container.classList.contains('editing-mode')) return;
+
+                const tagValue = tag.dataset.tagValue;
+                const now = Date.now();
+
+                if (now - this.lastClickTime < this.DOUBLE_CLICK_DELAY && this.lastClickTag === tagValue) {
+                    this.enterEditMode(tag, tagValue);
+                    this.lastClickTime = 0;
+                    this.lastClickTag = null;
+                } else {
+                    this.lastClickTime = now;
+                    this.lastClickTag = tagValue;
+                    selectKeyword(tagValue);
+                }
+            },
+
+            startDrag(tag, index, pos) {
+                // 防止重复开始拖拽
+                if (this.isDragging) return;
+
+                // 清理之前的状态
+                if (this.draggedEl && this.draggedEl.parentNode) {
+                    this.draggedEl.remove();
+                }
+
+                this.isDragging = true;
+                this.draggedIndex = index;
+                this.originalTag = tag;
+                this.pendingDrag = false;
+
+                const rect = tag.getBoundingClientRect();
+                this.offsetX = pos.x - rect.left;
+                this.offsetY = pos.y - rect.top;
+
+                // 获取原标签的计算样式（包括 hover 状态）
+                const computedStyle = window.getComputedStyle(tag);
+                const backgroundColor = computedStyle.backgroundColor;
+                const filter = computedStyle.filter;
+                const boxShadow = computedStyle.boxShadow;
+
+                // 先隐藏原标签（在克隆之前），避免出现两个标签
+                tag.style.visibility = 'hidden';
+                tag.setAttribute('data-dragging', 'true');
+
+                // 创建拖拽元素，保持原标签的外观
+                this.draggedEl = tag.cloneNode(true);
+                this.draggedEl.classList.add('tag-dragging');
+                this.draggedEl.style.cssText = `
+                    position: fixed;
+                    left: ${rect.left}px;
+                    top: ${rect.top}px;
+                    width: ${rect.width}px;
+                    height: ${rect.height}px;
+                    z-index: 9999;
+                    pointer-events: none;
+                    background: ${backgroundColor};
+                    filter: ${filter};
+                    transform: scale(0.98);
+                    opacity: 0.9;
+                    box-shadow: ${boxShadow || '0 8px 25px rgba(99, 102, 241, 0.4)'};
+                    transition: none;
+                    margin: 0;
+                    padding: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                `;
+                document.body.appendChild(this.draggedEl);
+
+                document.getElementById('tag_container').classList.add('dragging-active');
+            },
+
+            updateDropTarget(pos) {
+                const container = document.getElementById('tag_container');
+                const tags = Array.from(container.querySelectorAll('.tag'));
+
+                let newTargetIndex = this.draggedIndex;
+
+                for (let i = 0; i < tags.length; i++) {
+                    const tag = tags[i];
+                    if (tag.style.display === 'none') continue;
+
+                    const rect = tag.getBoundingClientRect();
+                    const tagIndex = parseInt(tag.dataset.tagIndex);
+                    const centerX = rect.left + rect.width / 2;
+
+                    if (pos.x < centerX) {
+                        newTargetIndex = tagIndex;
+                        if (tagIndex > this.draggedIndex) newTargetIndex = tagIndex;
+                        break;
+                    } else if (i === tags.length - 1) {
+                        newTargetIndex = tagIndex + 1;
+                    }
+                }
+
+                this.targetIndex = newTargetIndex;
+
+                // 计算移动距离：使用原标签的宽度
+                const originalRect = this.originalTag.getBoundingClientRect();
+                const gap = 5;
+                const moveDistance = -(originalRect.width + gap);
+
+                // 让所有受影响的标签一起移动
+                tags.forEach(tag => {
+                    if (tag.style.display === 'none') return;
+
+                    const tagIndex = parseInt(tag.dataset.tagIndex);
+                    tag.style.transform = '';
+                    tag.style.transition = '';
+
+                    if (this.draggedIndex < newTargetIndex) {
+                        // 向右拖拽：draggedIndex 到 newTargetIndex 之间的标签向左移动
+                        if (tagIndex > this.draggedIndex && tagIndex <= newTargetIndex) {
+                            tag.style.transform = `translateX(${moveDistance}px)`;
+                            tag.style.transition = 'transform 0.25s cubic-bezier(0.2, 0, 0.2, 1)';
+                        }
+                    } else if (this.draggedIndex > newTargetIndex) {
+                        // 向左拖拽：newTargetIndex 到 draggedIndex 之间的标签向右移动
+                        if (tagIndex >= newTargetIndex && tagIndex < this.draggedIndex) {
+                            tag.style.transform = `translateX(${-moveDistance}px)`;
+                            tag.style.transition = 'transform 0.25s cubic-bezier(0.2, 0, 0.2, 1)';
+                        }
+                    }
+                });
+            },
+
+            endDrag() {
+                if (!this.isDragging) return;
+
+                const container = document.getElementById('tag_container');
+                const draggedEl = this.draggedEl;
+                const originalTag = this.originalTag;
+
+                // 清除其他标签的动画状态
+                container.querySelectorAll('.tag').forEach(t => {
+                    t.classList.remove('tag-shift-left', 'tag-shift-right');
+                    t.style.transform = '';
+                    t.style.transition = '';
+                    t.removeAttribute('data-dragging');
+                    // 恢复被隐藏的原标签
+                    if (t.style.visibility === 'hidden') {
+                        t.style.visibility = '';
+                    }
+                });
+                container.classList.remove('dragging-active');
+
+                // 如果位置发生了变化，更新数据并重新渲染
+                if (this.targetIndex !== null && this.targetIndex !== this.draggedIndex) {
+                    let insertAt = this.targetIndex;
+                    if (insertAt > this.draggedIndex) insertAt--;
+
+                    const item = keywords.splice(this.draggedIndex, 1)[0];
+                    keywords.splice(insertAt, 0, item);
+
+                    // 立即重新渲染，让标签出现在新位置
+                    renderTags(false);
+
+                    // 拖拽元素平滑淡出
+                    if (draggedEl && draggedEl.parentNode) {
+                        const newContainer = document.getElementById('tag_container');
+                        const newTag = newContainer.querySelector(`.tag[data-tag-value="${item.value.replace(/"/g, '\\"')}"]`);
+                        if (newTag) {
+                            const newRect = newTag.getBoundingClientRect();
+                            // 让拖拽元素移动到新位置并淡出
+                            draggedEl.style.transition = 'all 0.2s ease-out';
+                            draggedEl.style.left = newRect.left + 'px';
+                            draggedEl.style.top = newRect.top + 'px';
+                            draggedEl.style.opacity = '0';
+                            draggedEl.style.transform = 'scale(1)';
+                            setTimeout(() => {
+                                if (draggedEl.parentNode) draggedEl.remove();
+                            }, 200);
+                        } else {
+                            if (draggedEl.parentNode) draggedEl.remove();
+                        }
+                    }
+
+                    clearTimeout(window.previewDebounceTimer);
+                    window.previewDebounceTimer = setTimeout(updateRealtimePreview, 300);
+                } else {
+                    // 没有移动，直接清理拖拽元素
+                    if (draggedEl && draggedEl.parentNode) {
+                        draggedEl.remove();
+                    }
+                }
+
+                this.isDragging = false;
+                this.draggedEl = null;
+                this.draggedIndex = null;
+                this.originalTag = null;
+                this.targetIndex = null;
+            },
+
+            handleClick(tag) {
+                // 拖拽中忽略点击
+                if (this.isDragging) return;
+                // 拖拽中的标签忽略点击
+                if (tag.getAttribute('data-dragging') === 'true') return;
+
+                const container = document.getElementById('tag_container');
+                if (container.classList.contains('editing-mode')) return;
+
+                const tagValue = tag.dataset.tagValue;
+                const now = Date.now();
+
+                if (now - this.lastClickTime < this.DOUBLE_CLICK_DELAY && this.lastClickTag === tagValue) {
+                    this.enterEditMode(tag, tagValue);
+                    this.lastClickTime = 0;
+                    this.lastClickTag = null;
+                } else {
+                    this.lastClickTime = now;
+                    this.lastClickTag = tagValue;
+                    selectKeyword(tagValue);
+                }
+            },
+
+            enterEditMode(tag, originalValue) {
+                const kObj = keywords.find(k => k.value === originalValue);
+                if (!kObj) return;
+
+                const container = document.getElementById('tag_container');
+                // 防止重复进入编辑模式
+                if (container.classList.contains('editing-mode')) return;
+
+                const tagRect = tag.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+
+                // 添加编辑模式类，模糊其他标签
+                container.classList.add('editing-mode');
+                tag.classList.add('tag-editing');
+
+                // 创建浮动编辑器
+                const editor = document.createElement('div');
+                editor.className = 'tag-editor-overlay';
+                editor.innerHTML = `
+                    <input type="text" class="tag-edit-keyword" value="${kObj.value}" placeholder="关键字">
+                    <div class="tag-edit-actions">
+                        <button class="tag-edit-confirm" title="确认">✓</button>
+                        <button class="tag-edit-cancel" title="取消">✕</button>
+                    </div>
+                `;
+
+                // 先添加到容器以获取编辑器尺寸
+                editor.style.visibility = 'hidden';
+                editor.style.position = 'absolute';
+                container.appendChild(editor);
+                const editorRect = editor.getBoundingClientRect();
+
+                // 计算编辑器位置（默认在标签上方）
+                let left = tagRect.left - containerRect.left;
+                let top = tagRect.top - containerRect.top - editorRect.height - 8;
+
+                // 边界检查：确保不会超出容器范围
+                const maxLeft = containerRect.width - editorRect.width - 10;
+                const maxTop = containerRect.height - editorRect.height - 10;
+
+                // 确保 left 不会超出容器
+                if (left < 5) left = 5;
+                if (left > maxLeft) left = maxLeft;
+
+                // 确保 top 不会超出容器（如果上方空间不够，显示在标签下方）
+                if (top < 5) {
+                    top = tagRect.top - containerRect.top + tagRect.height + 8;
+                }
+                if (top > maxTop) top = maxTop;
+
+                // 应用定位
+                editor.style.left = left + 'px';
+                editor.style.top = top + 'px';
+                editor.style.visibility = 'visible';
+
+                const keywordInput = editor.querySelector('.tag-edit-keyword');
+
+                // 延迟聚焦确保动画完成
+                setTimeout(() => {
+                    keywordInput.focus();
+                    keywordInput.select();
+                }, 50);
+
+                const closeEditor = () => {
+                    container.classList.remove('editing-mode');
+                    tag.classList.remove('tag-editing');
+                    editor.remove();
+                };
+
+                const confirmEdit = () => {
+                    const newValue = keywordInput.value.trim();
+
+                    if (newValue && newValue !== originalValue) {
+                        if (keywords.some(k => k.value === newValue && k.value !== originalValue)) {
+                            keywordInput.style.borderColor = '#ef4444';
+                            keywordInput.classList.add('shake');
+                            setTimeout(() => keywordInput.classList.remove('shake'), 500);
+                            return;
+                        }
+                    }
+
+                    if (newValue) {
+                        kObj.value = newValue;
+                        if (activeKeyword === originalValue) activeKeyword = newValue;
+                    } else {
+                        keywords = keywords.filter(k => k.value !== originalValue);
+                    }
+
+                    closeEditor();
+                    renderTags();
+                    clearTimeout(window.previewDebounceTimer);
+                    window.previewDebounceTimer = setTimeout(updateRealtimePreview, 300);
+                };
+
+                const cancelEdit = () => {
+                    closeEditor();
+                };
+
+                editor.querySelector('.tag-edit-confirm').onclick = confirmEdit;
+                editor.querySelector('.tag-edit-cancel').onclick = cancelEdit;
+
+                keywordInput.onkeydown = (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); confirmEdit(); }
+                    else if (e.key === 'Escape') cancelEdit();
+                };
+            }
+        };
+
+        function initTagInteractions() {
+            TagDragManager.init();
+        }
+
+function removeTag(val) {
             keywords = keywords.filter(k => k.value !== val);
             if (activeKeyword === val) {
                 activeKeyword = keywords.length > 0 ? keywords[keywords.length - 1].value : null;
@@ -2825,7 +3427,7 @@
     <!-- 图片预览 Lightbox -->
     <div id="lightbox" class="lightbox" onclick="closeLightbox()">
         <span class="lightbox-close">&times;</span>
-        <img class="lightbox-content" id="lightbox-img" onclick="event.stopPropagation()">
+        <img class="lightbox-content" id="lightbox-img" onclick="event.stopPropagation()" src="" alt="图片预览">
     </div>
 
     <script>
